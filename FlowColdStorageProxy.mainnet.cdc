@@ -43,18 +43,17 @@ pub contract FlowColdStorageProxy {
     pub resource Vault: FungibleToken.Receiver {
         pub var lastNonce: Int64
         access(self) let flowVault: @FungibleToken.Vault
-        access(self) let key: PublicKey
         access(self) let publicKey: [UInt8]
 
         init(publicKey: [UInt8]) {
             self.flowVault <- FlowToken.createEmptyVault()
             self.lastNonce = -1
             self.publicKey = publicKey
-            self.key = PublicKey(
+            let key = PublicKey(
                 publicKey: self.publicKey,
                 signatureAlgorithm: SignatureAlgorithm.ECDSA_secp256k1
             )
-            if !self.key.isValid {
+            if !key.isValid {
                 panic("Invalid publicKey value")
             }
         }
@@ -103,7 +102,11 @@ pub contract FlowColdStorageProxy {
             data = data.concat(nonce.toBigEndianBytes())
 
             // Verify the signature.
-            if !self.key.verify(signature: sig, signedData: data, domainSeparationTag: "FLOW-V0.0-user", hashAlgorithm: HashAlgorithm.SHA3_256) {
+            let key = PublicKey(
+                publicKey: self.publicKey,
+                signatureAlgorithm: SignatureAlgorithm.ECDSA_secp256k1
+            )
+            if !key.verify(signature: sig, signedData: data, domainSeparationTag: "FLOW-V0.0-user", hashAlgorithm: HashAlgorithm.SHA3_256) {
                 panic("Invalid meta transaction signature")
             }
 
